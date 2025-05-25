@@ -14,7 +14,7 @@ export default function TabOneScreen() {
   const [days, setDays] = useState("2");
   const [interests, setInterests] = useState("");
   const [avoidCrowds, setAvoidCrowds] = useState(false);
-  const [itinerary, setItinerary] = useState([]);
+  const [itinerary, setItinerary] = useState<any>(null);
 
   const getPlan = async () => {
     try {
@@ -33,10 +33,17 @@ export default function TabOneScreen() {
       );
 
       const data = await response.json();
-      setItinerary(data.itinerary || []);
+
+      if (data.itinerary) {
+        setItinerary(data.itinerary);
+      } else if (data.error) {
+        setItinerary(data.error);
+      } else {
+        setItinerary("⚠️ No itinerary returned.");
+      }
     } catch (error) {
       console.error(error);
-      setItinerary([{ name: "⚠️ Network error. Is your backend running?" }]);
+      setItinerary("⚠️ Network error. Is your backend running?");
     }
   };
 
@@ -77,7 +84,7 @@ export default function TabOneScreen() {
       <Button title="🧠 Generate Itinerary" onPress={getPlan} />
 
       <View style={styles.result}>
-        {Array.isArray(itinerary) ? (
+        {Array.isArray(itinerary) && itinerary.length > 0 ? (
           itinerary.map((item, idx) => (
             <View key={idx} style={{ marginBottom: 20 }}>
               <Text style={{ fontWeight: "bold", fontSize: 16 }}>
@@ -89,8 +96,10 @@ export default function TabOneScreen() {
               <Text>—</Text>
             </View>
           ))
-        ) : (
+        ) : typeof itinerary === "string" ? (
           <Text>{itinerary}</Text>
+        ) : (
+          <Text>⚠️ No itinerary returned. Please try again.</Text>
         )}
       </View>
     </ScrollView>
