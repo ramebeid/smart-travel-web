@@ -14,9 +14,12 @@ export default function TabOneScreen() {
   const [days, setDays] = useState("2");
   const [interests, setInterests] = useState("");
   const [avoidCrowds, setAvoidCrowds] = useState(false);
-  const [itinerary, setItinerary] = useState<any[] | string>("");
+  const [itinerary, setItinerary] = useState<any[]>([]);
+  const [error, setError] = useState("");
 
   const getPlan = async () => {
+    setError("");
+    setItinerary([]);
     try {
       const response = await fetch(
         "https://smart-travel-backend.onrender.com/plan",
@@ -26,26 +29,24 @@ export default function TabOneScreen() {
           body: JSON.stringify({
             city,
             days: parseInt(days),
-            interests: interests
-              .split(",")
-              .map((i) => i.trim())
-              .filter((i) => i),
+            interests: interests.split(",").map((i) => i.trim()),
             avoid_crowds: avoidCrowds,
           }),
         },
       );
 
       const data = await response.json();
+
       if (data.itinerary) {
         setItinerary(data.itinerary);
       } else if (data.error) {
-        setItinerary(`❌ Error: ${data.error}`);
+        setError(data.error);
       } else {
-        setItinerary("⚠️ No itinerary returned.");
+        setError("Unexpected response from backend.");
       }
-    } catch (error) {
-      console.error(error);
-      setItinerary("⚠️ Network error. Is your backend running?");
+    } catch (err) {
+      console.error(err);
+      setError("⚠️ Network error. Is your backend running?");
     }
   };
 
@@ -56,12 +57,12 @@ export default function TabOneScreen() {
       <Text style={styles.label}>🌍 Which city are you visiting?</Text>
       <TextInput
         style={styles.input}
-        placeholder="e.g. Cairo"
+        placeholder="e.g. Paris"
         value={city}
         onChangeText={setCity}
       />
 
-      <Text style={styles.label}>📅 How many days is your trip?</Text>
+      <Text style={styles.label}>📅 Number of days:</Text>
       <TextInput
         style={styles.input}
         placeholder="e.g. 2"
@@ -70,67 +71,66 @@ export default function TabOneScreen() {
         onChangeText={setDays}
       />
 
-      <Text style={styles.label}>🎯 What are your interests?</Text>
+      <Text style={styles.label}>🎯 Interests (comma-separated):</Text>
       <TextInput
         style={styles.input}
-        placeholder="e.g. history, food, culture"
+        placeholder="e.g. food, history"
         value={interests}
         onChangeText={setInterests}
       />
 
       <View style={styles.switchRow}>
-        <Text>🚶‍♂️ Avoid Crowds?</Text>
+        <Text>🚶 Avoid Crowds?</Text>
         <Switch value={avoidCrowds} onValueChange={setAvoidCrowds} />
       </View>
 
       <Button title="🧠 Generate Itinerary" onPress={getPlan} />
 
-      <View style={styles.result}>
-        {Array.isArray(itinerary) && itinerary.length > 0 ? (
-          itinerary.map((item, idx) => (
-            <View key={idx} style={{ marginBottom: 20 }}>
-              <Text style={{ fontWeight: "bold", fontSize: 16 }}>
-                ⏰ {item.start_time || "???"} – {item.name || "Unnamed place"}
-              </Text>
-              {item.location && <Text>📍 {item.location}</Text>}
-              {item.duration_min && <Text>🕐 {item.duration_min} minutes</Text>}
-              {item.cuisine && item.cuisine !== "" && (
-                <Text>🍽 {item.cuisine}</Text>
-              )}
-              <Text>—</Text>
-            </View>
-          ))
-        ) : typeof itinerary === "string" ? (
-          <Text>{itinerary}</Text>
-        ) : (
-          <Text>⚠️ No itinerary returned. Please try again.</Text>
-        )}
-      </View>
+      {error ? <Text style={styles.error}>{error}</Text> : null}
+
+      {itinerary.length > 0 &&
+        itinerary.map((item, index) => (
+          <View key={index} style={styles.card}>
+            <Text style={styles.time}>{item.start_time}</Text>
+            <Text style={styles.name}>
+              {item.name} ({item.duration_min} mins)
+            </Text>
+            <Text style={styles.address}>📍 {item.location}</Text>
+            {item.cuisine && (
+              <Text style={styles.cuisine}>🍽️ {item.cuisine}</Text>
+            )}
+          </View>
+        ))}
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { marginTop: 50, padding: 20 },
+  container: { marginTop: 40, padding: 20 },
   title: { fontSize: 24, fontWeight: "bold", marginBottom: 20 },
-  label: { fontSize: 16, fontWeight: "500", marginBottom: 5, marginTop: 15 },
+  label: { fontSize: 16, marginBottom: 5 },
   input: {
     borderWidth: 1,
     borderColor: "#ccc",
     padding: 10,
-    marginBottom: 10,
     borderRadius: 5,
+    marginBottom: 15,
   },
   switchRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 20,
     alignItems: "center",
+    marginBottom: 20,
+    justifyContent: "space-between",
   },
-  result: {
-    marginTop: 30,
-    fontSize: 16,
-    lineHeight: 22,
-    color: "#333",
+  error: { color: "red", marginTop: 10 },
+  card: {
+    backgroundColor: "#f9f9f9",
+    padding: 15,
+    borderRadius: 8,
+    marginVertical: 8,
   },
+  time: { fontSize: 16, fontWeight: "600" },
+  name: { fontSize: 16, marginTop: 5 },
+  address: { fontSize: 14, color: "#555", marginTop: 3 },
+  cuisine: { fontSize: 14, color: "#333", marginTop: 3 },
 });
