@@ -14,7 +14,7 @@ export default function TabOneScreen() {
   const [days, setDays] = useState("2");
   const [interests, setInterests] = useState("");
   const [avoidCrowds, setAvoidCrowds] = useState(false);
-  const [itinerary, setItinerary] = useState<any>(null);
+  const [itinerary, setItinerary] = useState<any[] | string>("");
 
   const getPlan = async () => {
     try {
@@ -26,18 +26,20 @@ export default function TabOneScreen() {
           body: JSON.stringify({
             city,
             days: parseInt(days),
-            interests: interests.split(",").map((i) => i.trim()),
+            interests: interests
+              .split(",")
+              .map((i) => i.trim())
+              .filter((i) => i),
             avoid_crowds: avoidCrowds,
           }),
         },
       );
 
       const data = await response.json();
-
       if (data.itinerary) {
         setItinerary(data.itinerary);
       } else if (data.error) {
-        setItinerary(data.error);
+        setItinerary(`❌ Error: ${data.error}`);
       } else {
         setItinerary("⚠️ No itinerary returned.");
       }
@@ -92,7 +94,9 @@ export default function TabOneScreen() {
               </Text>
               {item.location && <Text>📍 {item.location}</Text>}
               {item.duration_min && <Text>🕐 {item.duration_min} minutes</Text>}
-              {item.cuisine && <Text>🍽 {item.cuisine}</Text>}
+              {item.cuisine && item.cuisine !== "" && (
+                <Text>🍽 {item.cuisine}</Text>
+              )}
               <Text>—</Text>
             </View>
           ))
